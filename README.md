@@ -1,42 +1,56 @@
-# Pi-hole + Unbound (Docker) 🛡️
+# 🛡️ Ultimate HomeLab: Security & Monitoring Hub
 
-Esta es una configuración completa para tener un servidor DNS privado y bloqueador de publicidad en toda la red local, usando una Raspberry Pi.
+Este proyecto convierte una **Raspberry Pi** en el centro neurálgico de seguridad y monitorización de la red doméstica. No es solo un bloqueador de anuncios, es una infraestructura completa de **DNS Privado, Acceso Remoto Seguro (VPN) y Monitorización de Alta Disponibilidad**.
 
-Incluye:
-- **Pi-hole:** Panel de control y bloqueo de anuncios.
-- **Unbound:** Resolver DNS recursivo propio (para no depender de Google ni de la operadora).
+![Architecture](https://img.shields.io/badge/Raspberry_Pi-C51A4A?style=for-the-badge&logo=Raspberry%20Pi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Pi-hole](https://img.shields.io/badge/Pi--hole-96060C?style=for-the-badge&logo=pi-hole&logoColor=white)
+![Tailscale](https://img.shields.io/badge/Tailscale-1C1C1C?style=for-the-badge&logo=tailscale&logoColor=white)
 
-## 📋 Requisitos
-- Raspberry Pi (cualquier modelo con Docker instalado).
-- Docker y Docker Compose.
+## 🏗️ Arquitectura del Proyecto
 
-## 🚀 Instalación
+El sistema se compone de 4 pilares fundamentales corriendo sobre Docker:
 
-1. Clona este repositorio o copia el archivo `docker-compose.yml`.
-2. Levanta el contenedor:
-   ```bash
-   docker compose up -d
-   ```
-⚠️ Configuración Importante (El Truco)
-Para que Pi-hole acepte peticiones de otros dispositivos cuando corre en Docker (evitando el error "Refusing query from non-local network"), es necesario ejecutar este comando una vez iniciado el contenedor:
+1.  **Privacidad DNS (Pi-hole + Unbound):**
+    * Bloqueo de publicidad y rastreadores a nivel de red.
+    * Resolución DNS recursiva propia (bypass de Google/ISP) para máxima privacidad.
+2.  **Monitorización (Uptime Kuma):**
+    * Vigilancia 24/7 de servicios internos y conectividad externa.
+    * Alertas en tiempo real vía **Discord Webhooks** y **Healthchecks.io** (Heartbeat).
+3.  **Acceso Remoto & VPN (Tailscale):**
+    * Red overlay Zero-Trust para acceder a la LAN desde cualquier lugar.
+    * Configuración de **Exit Node** para navegar seguro en redes públicas (hoteles, aeropuertos) usando el filtrado DNS de casa.
+    * Bypass de CG-NAT (ideal para operadoras como Digi).
+4.  **Mantenimiento Automático (Watchtower + Log2Ram):**
+    * Actualización automática de contenedores.
+    * Gestión de logs en RAM para extender la vida útil de la tarjeta SD.
 
-Bash
+## 🚀 Instalación Rápida
 
-docker exec -it pihole pihole -a -i all
-O configurarlo vía web en: Settings > DNS > Interface Settings > Permit all origins.
+1.  Clona el repositorio:
+    ```bash
+    git clone [https://github.com/tu-usuario/tu-repo.git](https://github.com/tu-usuario/tu-repo.git)
+    cd tu-repo
+    ```
+2.  Levanta la pila de contenedores:
+    ```bash
+    docker compose up -d
+    ```
+3.  Accede a los paneles:
+    * **Pi-hole:** `http://<IP-RASPBERRY>/admin`
+    * **Uptime Kuma:** `http://<IP-RASPBERRY>:3001`
 
-⚙️ Configuración del Router
-Para que funcione en toda la casa:
+## ⚙️ Configuraciones Adicionales
 
-Entrar al router (normalmente 192.168.0.1 o 1.1).
+### VPN (Tailscale)
+Para habilitar el acceso remoto y el bloqueo de anuncios fuera de casa:
+1. Instalar Tailscale en el host: `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Anunciar como Exit Node: `sudo tailscale up --advertise-exit-node`
+3. En el panel de Tailscale, configurar el DNS Global con la IP de la interfaz Tailscale de la Pi.
 
-Buscar configuración DHCP / LAN.
-
-Establecer como DNS Primario la IP de la Raspberry (ej: 192.168.0.210).
-
-Dejar el DNS Secundario vacío o 0.0.0.0.
-
-✅ Resultados
-Navegación sin publicidad.
-
-Privacidad total (Google no ve tus peticiones DNS).
+### Protección SD (Log2Ram)
+Es vital instalar Log2Ram para evitar quemar la tarjeta SD con escrituras constantes de logs:
+```bash
+echo "deb [signed-by=/usr/share/keyrings/azlux-archive-keyring.gpg] [http://packages.azlux.fr/debian/](http://packages.azlux.fr/debian/) bookworm main" | sudo tee /etc/apt/sources.list.d/azlux.list
+sudo apt install log2ram
+```
