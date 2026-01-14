@@ -7,7 +7,7 @@ ROJO='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${AZUL}=================================================${NC}"
-echo -e "${AZUL}   INSTALADOR AUTOMÁTICO: Pi-hole + Unbound      ${NC}"
+echo -e "${AZUL}   INSTALADOR AUTOMÁTICO: Pi-hole + Unbound       ${NC}"
 echo -e "${AZUL}=================================================${NC}"
 
 # 1. Comprobar si somos root
@@ -68,7 +68,6 @@ server:
 EOF
 
 # 6. Crear docker-compose.yml
-# Nota: Incluye el fix de DNSMASQ_LISTENING: all para que funcione a la primera
 echo -e "${VERDE}[+] Generando docker-compose.yml...${NC}"
 cat <<EOF > docker-compose.yml
 services:
@@ -113,16 +112,36 @@ networks:
         - subnet: 172.20.0.0/24
 EOF
 
-# 7. Solucionar conflicto puerto 53 (común en Ubuntu/Raspi modernos)
+# 7. Solucionar conflicto puerto 53
 echo -e "${VERDE}[+] Asegurando que el puerto 53 esté libre...${NC}"
 systemctl stop systemd-resolved 2>/dev/null
 systemctl disable systemd-resolved 2>/dev/null
-# Edita resolv.conf para que la Pi tenga internet temporalmente si se queda sin DNS
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 
 # 8. Arrancar contenedores
 echo -e "${VERDE}[+] Despegando contenedores... 🚀${NC}"
 docker compose up -d
+
+# --- AQUÍ EMPIEZA LO NUEVO ---
+
+# 8.5. Configurar actualización automática (CRON)
+echo -e "${VERDE}[+] Configurando actualización automática de listas (3:00 AM)...${NC}"
+
+# Generamos el script de actualización
+cat <<EOF > actualizar_listas.sh
+#!/bin/bash
+docker exec pihole pihole -g
+EOF
+
+chmod +x actualizar_listas.sh
+
+# Añadimos la tarea al cron
+RUTA_SCRIPT="$DIRECTORIO_INSTALL/actualizar_listas.sh"
+LOG_FILE="$DIRECTORIO_INSTALL/update.log"
+(crontab -l 2>/dev/null; echo "0 3 * * * $RUTA_SCRIPT >> $LOG_FILE 2>&1") | sort -u | crontab -
+echo -e "${VERDE}[+] Tarea programada correctamente.${NC}"
+
+# --- AQUÍ TERMINA LO NUEVO ---
 
 # 9. Mostrar resultado
 IP_LOCAL=$(hostname -I | awk '{print $1}')
