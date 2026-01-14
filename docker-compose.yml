@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  # 1. PI-HOLE (Bloqueo de anuncios y DNS)
+  # 1. PI-HOLE (Bloqueo de publicidad y DNS Sinkhole)
   pihole:
     container_name: pihole
     image: pihole/pihole:latest
@@ -11,8 +11,8 @@ services:
       - "80:80/tcp"
     environment:
       TZ: 'Europe/Madrid'
-      WEBPASSWORD: 'admin' # ¡Cámbiala al instalar!
-      # Enlaza Pi-hole con Unbound para privacidad total
+      WEBPASSWORD: 'admin' # ¡Recuerda cambiarla!
+      # Enlazamos con Unbound para ser nuestro propio proveedor DNS
       PIHOLE_DNS_: '172.20.0.5#5335'
       DNSMASQ_LISTENING: 'all'
     volumes:
@@ -23,7 +23,7 @@ services:
       private_network:
         ipv4_address: 172.20.0.2
 
-  # 2. UNBOUND (Resolver DNS Recursivo propio)
+  # 2. UNBOUND (Resolver DNS Recursivo - Privacidad total)
   unbound:
     container_name: unbound
     image: mvance/unbound:latest
@@ -37,7 +37,7 @@ services:
       private_network:
         ipv4_address: 172.20.0.5
 
-  # 3. UPTIME KUMA (Monitorización y Status Page)
+  # 3. UPTIME KUMA (Monitorización de servicios y Alertas)
   uptime-kuma:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
@@ -49,13 +49,13 @@ services:
     networks:
       - private_network
 
-  # 4. WATCHTOWER (Actualizaciones automáticas de contenedores)
+  # 4. WATCHTOWER (Actualización automática de contenedores)
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    # Comprueba actualizaciones cada día a las 4:00 AM
+    # Revisa actualizaciones cada día a las 4:00 AM y limpia imágenes viejas
     command: --schedule "0 0 4 * * *" --cleanup
     restart: unless-stopped
     networks:
